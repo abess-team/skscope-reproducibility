@@ -1,6 +1,6 @@
 import numpy as np
-from scope import IHTSolver, quadratic_objective, GrahtpSolver, OmpSolver
-import parallel_experiment_util as util
+from jax import numpy as jnp
+from skscope import IHTSolver, HTPSolver
 
 p = 1000
 n = 200
@@ -22,26 +22,24 @@ def data_generator(s, type: str, seed):
     X = np.random.randn(n, p) / np.sqrt(n)
     y = np.matmul(X, beta)
 
-    model: dict = quadratic_objective(np.matmul(X.T, X), -np.matmul(X.T, y))
-
-    return model, beta
+    return beta, X, y
 
 
 def task(s, type: str, seed):
-    model, true_params = data_generator(s, type, seed)
+    true_params, X, y = data_generator(s, type, seed)
     results = []
 
+    def linear_loss(params):
+        return jnp.sum(jnp.square(y - jnp.matmul(X, params)))
+
     solvers = {
-        #"IHT-1/3" : IHTSolver(p,s, step_size=1/3), 
-        #"IHT" : IHTSolver(p,s, step_size=1.0),
-        "HTP" : GrahtpSolver(p,s, step_size=1.0),
-        #"HTP-1.6" : GrahtpSolver(p,s, step_size=1.6),
-        #"HTP-0.71": GrahtpSolver(p,s, step_size=0.71),
-        "HTP'" : GrahtpSolver(p,2 * s, step_size=1.0),
+        "IHT" : IHTSolver(p,s, step_size=1.0),
+        "HTP" : HTPSolver(p,s, step_size=1.0),
+        "HTP'" : HTPSolver(p,2 * s, step_size=1.0),
     }
 
     for name, solver in solvers.items():
-        solver.solve(**model)
+        solver.solve(linear_loss, jit=True)
         results.append(
             {
                 "method": name,
@@ -52,20 +50,6 @@ def task(s, type: str, seed):
     return results
 
 if __name__ == "__main__":  
-    in_key = ["s", "type", "seed"]
-    out_key = ["method", "success"]
-
-    experiment = util.ParallelExperiment(
-        task, in_key, out_key, processes=20, name="HTP", memory_limit=0.8
-    )
-    if False:
-        experiment.check(s=10, type="flat", seed=46455)
-    else:
-        parameters = util.para_generator(
-            {"s": np.arange(1, 100), "type": ["flat", "gaussian", "linear"]},
-            #{"s": np.arange(1, 66), "type": ["flat"]},
-            repeat=100,
-            seed=0,
-        )
-        experiment.run(parameters)
-        experiment.save()
+    # {"s": np.arange(1, 100), "type": ["flat", "gaussian", "linear"]}, repeat 100 times
+    print(task(s=10, type="flat", seed=46455))
+ 

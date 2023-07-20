@@ -33,12 +33,12 @@ def task(n, rho, seed):
     s = 10
     lambd = math.sqrt(math.log(p) / n)  / 10
     X, y, true_params, true_support_set = data_generator(n, p, s, rho, seed)
-    def loss(params, _):
+    def loss(params):
         return logistic_loss(params, X, y)
-    def loss_L2(params, _):
+    def loss_L2(params):
         return logistic_loss(params, X, y) + lambd * jnp.square(params[:-1]).sum()
 
-    results = [{"method": "True", "time": 0.0, "accuracy": 1.0, "loss": loss(true_params, X, y), "error": 0.0}]
+    results = [{"method": "True", "time": 0.0, "accuracy": 1.0, "loss": loss(true_params), "error": 0.0}]
     methods = ["OMP", "GraSP_L2", "GraSP"]
     solvers = [OMPSolver(p+1,s,preselect=[p]), GraspSolver(p+1,s,preselect=[p]), GraspSolver(p+1,s,preselect=[p])]
     loss_fns = [loss, loss_L2, loss]
@@ -56,6 +56,7 @@ def task(n, rho, seed):
     return results
 
 if __name__ == "__main__":
+    # {"n": np.arange(50, 1001, 50), "rho": [0.0, 1/3, 0.5, math.sqrt(2)/2]}, repeat 200 times
     print(task(n=1000, rho=0.5, seed=0))
 
               

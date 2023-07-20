@@ -1,8 +1,7 @@
 import numpy as np
 import jax.numpy as jnp
 import time
-from scope import FobaSolver, ForwardSolver, OMPSolver
-import parallel_experiment_util as util
+from skscope import FobaSolver, ForwardSolver, OMPSolver
 
 n, p = 100, 500
 
@@ -65,21 +64,21 @@ def task(s, seed):
     cv_fold_id = [(5*i) // n for i in range(n)]
     results = []
     solvers = {
-        #"foba_gdt" : FobaSolver(p, np.arange(20), n, use_gradient=True, cv=5, cv_fold_id=cv_fold_id),
-        #"omp" : OmpSolver(p, np.arange(20), n, cv=5, cv_fold_id=cv_fold_id),
-        "foba" : FobaSolver(p, np.arange(20), n, cv=5, cv_fold_id=cv_fold_id),
-        "forward" : ForwardSolver(p, np.arange(20), n, cv=5, cv_fold_id=cv_fold_id),
+        "foba_gdt" : FobaSolver(p, np.arange(20), n, use_gradient=True, cv=5, cv_fold_id=cv_fold_id),
+        "omp" : OMPSolver(p, np.arange(20), n, cv=5, cv_fold_id=cv_fold_id),
+        #"foba" : FobaSolver(p, np.arange(20), n, cv=5, cv_fold_id=cv_fold_id),
+        #"forward" : ForwardSolver(p, np.arange(20), n, cv=5, cv_fold_id=cv_fold_id),
     }
 
     for method, solver in solvers.items():
         result = {"method": method}
         start = time.perf_counter()
-        solver.solve(objective, gradient, jit=True)
+        solver.solve(objective, gradient=gradient, jit=True)
         result["time"] = time.perf_counter() - start
-        result["F_score"] = F_score(true_support_set, solver.support_set)
-        result["estimation_error"] = estimation_error(true_params, solver.params)
-        result["loss"] = solver.value_of_objective
-        result["sparsity"] = solver.support_set.size
+        result["F_score"] = F_score(true_support_set, solver.get_support())
+        result["estimation_error"] = estimation_error(true_params, solver.get_estimated_params())
+        result["loss"] = solver.objective_value
+        result["sparsity"] = solver.get_support().size
         print(result)
         results.append(result)
 
@@ -87,25 +86,5 @@ def task(s, seed):
 
 
 if __name__ == "__main__":
-    in_key = ["s", "seed"]
-    out_key = ["method", "time", "F_score", "loss", "estimation_error", "sparsity"]
-
-    experiment = util.ParallelExperiment(
-        task, in_key, out_key, processes=20, name="Foba-obj", memory_limit=0.8
-    )
-
-    if True:
-        experiment.check(s=5, seed=0)
-    else:
-        """
-        parameters = util.para_generator(
-            {"s": np.arange(5, 15)},
-            repeat=50,
-            seed=1,
-        )
-        """
-        parameters = [
-            {"s": s, "seed": 50 * (s-5) + i} for s in range(5, 15) for i in [1]
-        ]
-        experiment.run(parameters)
-        experiment.save()
+    # {"s": np.arange(5, 15)}, repeat 50 times
+    print(task(s=5, seed=0))
