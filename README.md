@@ -29,7 +29,8 @@ This is the figure of the paper:
 
 ## Foba and OMP
 
-Here we reproduce the result of _Forward-Backward Greedy Algorithms for General Convex Smooth Functions over A Cardinality Constraint_.
+Here we reproduce the result of _Forward-Backward Greedy Algorithms for General Convex Smooth Functions over A Cardinality Constraint_. In the experiment of this paper, algorithms use information not obtainable in practice to select sparsity level. 
+And we get different results here because we use cross validation to select sparsity level.
 
 This is the figure of reproducing:
 ![](figure/Foba_OMP.png)
